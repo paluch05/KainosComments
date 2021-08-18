@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using FunctionApp1.Model;
+using FunctionApp1.Validators;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
@@ -42,6 +43,13 @@ namespace FunctionApp1
             {
                 return new BadRequestObjectResult(new
                     { reason = "Your JSON format is incorrect" }); 
+            }
+
+            var updateCommentRequestValidator = new UpdateCommentRequestValidator();
+            var validationResult = updateCommentRequestValidator.Validate(updateCommentRequest);
+            if (!validationResult.IsValid)
+            {
+                return new BadRequestObjectResult(validationResult.Errors);
             }
 
             var documentUri = UriFactory.CreateDocumentUri("Comments", "Comment", id);

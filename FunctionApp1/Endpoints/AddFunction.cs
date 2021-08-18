@@ -3,8 +3,10 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Web.Http;
 using FunctionApp1.Model;
+using FunctionApp1.Validators;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
@@ -13,7 +15,7 @@ using Newtonsoft.Json;
 
 namespace FunctionApp1.Endpoints
 {
-    class AddFunction
+    public class AddFunction
     {
         [FunctionName("AddComment")]
         public static async Task<IActionResult> AddComment(
@@ -23,7 +25,7 @@ namespace FunctionApp1.Endpoints
                 databaseName: "Comments",
                 collectionName: "Comment",
                 ConnectionStringSetting = "CosmosDbConnectionString")]
-            DocumentClient documentClient, // dodaje doc do cosm
+            IDocumentClient documentClient, // dodaje doc do cosm
             ILogger log)
         {
             log.LogInformation("Creating a new comment");
@@ -43,9 +45,14 @@ namespace FunctionApp1.Endpoints
                 { reason = "Your JSON format is incorrect" }); // 400, format zly np bez {
             }
 
-            if (!string.IsNullOrEmpty(addCommentRequest.Author) && !string.IsNullOrEmpty(addCommentRequest.Text))
+            var addCommentRequestValidator = new AddCommentRequestValidator();
+            var validationResult = addCommentRequestValidator.Validate(addCommentRequest);
+            if (!validationResult.IsValid)
             {
-                var comment = new Comment
+                return new BadRequestObjectResult(validationResult.Errors);
+            }
+
+            var comment = new Comment
                 {
                     Author = addCommentRequest.Author,
                     Text = addCommentRequest.Text,
@@ -62,10 +69,6 @@ namespace FunctionApp1.Endpoints
 
                 log.LogInformation("Comment successfully created.");
                 return new OkObjectResult(new { id = createResponse.Resource.Id });
-            }
-
-            return new BadRequestObjectResult(new
-            { reason = "One of your values is null" }); // jezeli ktorys jest null, idzie prosto tu
         }
     }
 }
