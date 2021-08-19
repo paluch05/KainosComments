@@ -49,7 +49,9 @@ namespace FunctionApp1.Endpoints
             var validationResult = addCommentRequestValidator.Validate(addCommentRequest);
             if (!validationResult.IsValid)
             {
-                return new BadRequestObjectResult(validationResult.Errors);
+                //return new BadRequestObjectResult(validationResult.Errors);
+                log.LogInformation(validationResult.ToString());
+                return new BadRequestObjectResult(new {reason = "Invalid dat"});
             }
 
             var comment = new Comment
