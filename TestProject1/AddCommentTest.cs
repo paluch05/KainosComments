@@ -83,7 +83,6 @@ namespace TestProject1
                         It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                     .Returns(Task.FromResult(new ResourceResponse<Document>(document)));
 
-
                 var logMock = new Mock<ILogger>();
                 //act
                 IActionResult nullResult =
@@ -163,7 +162,7 @@ namespace TestProject1
                 badRequestObjectResult.Value.Should().BeEquivalentTo(new {reason = "Your JSON format is incorrect"});
         }
 
-           StringBuilder tooLongString(int x)
+           string TooLongString(int x)
             {
                 StringBuilder builder = new StringBuilder();
                 string a = "a";
@@ -171,14 +170,17 @@ namespace TestProject1
                 {
                     builder.Append(a);
                 }
-                return builder;
+                return builder.ToString();
             }
 
             // 3a.
             [Fact]
-            public async Task ShouldReturnBadRequestWhenValueIsBiggerThanExpected()
+            public async Task ShouldReturnBadRequestWhenTextValueIsBiggerThanExpected()
             {
-                byte[] byteArray = Encoding.UTF8.GetBytes(tooLongString(350).ToString());
+                var tooLongComment = TooLongString(350);
+                var json = $"{{\"text\": \"{tooLongComment}\", \"author\": \"some author\"}}";
+
+                byte[] byteArray = Encoding.UTF8.GetBytes(json);
                 MemoryStream stream = new MemoryStream(byteArray);
                 var reqMock = new Mock<HttpRequest>();
                 reqMock.SetupGet(request => request.Body).Returns(stream);
@@ -192,8 +194,7 @@ namespace TestProject1
                         It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                     .Returns(Task.FromResult(new ResourceResponse<Document>()));
 
-
-                var logMock = new Mock<ILogger>();
+            var logMock = new Mock<ILogger>();
                 //act
                 IActionResult addCommentResult =
                     await AddFunction.AddComment(reqMock.Object, documentClientMock.Object, logMock.Object);
@@ -201,9 +202,40 @@ namespace TestProject1
 
                 //assert
                 badRequestObjectResult.Should().BeOfType<BadRequestObjectResult>();
-                badRequestObjectResult.Value.Should().BeEquivalentTo(new { reason = "Your JSON format is incorrect" });
-
+                badRequestObjectResult.Value.Should().BeEquivalentTo(new { reason = "Invalid data" });
             }
+
+            [Fact]
+            public async Task ShouldReturnBadRequestWhenAuthorValueIsBiggerThanExpected()
+            {
+                var tooLongAuthor = TooLongString(350);
+                var json = $"{{\"text\": \"jdljkslad\", \"author\": \"{tooLongAuthor}\"}}";
+
+                byte[] byteArray = Encoding.UTF8.GetBytes(json);
+                MemoryStream stream = new MemoryStream(byteArray);
+                var reqMock = new Mock<HttpRequest>();
+                reqMock.SetupGet(request => request.Body).Returns(stream);
+
+                var document = new Document() {Id = "abc"};
+
+                var documentClientMock = new Mock<IDocumentClient>();
+                documentClientMock
+                    .Setup(client => client.CreateDocumentAsync(
+                        It.IsAny<Uri>(), It.IsAny<Comment>(), It.IsAny<RequestOptions>(),
+                        It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                    .Returns(Task.FromResult(new ResourceResponse<Document>()));
+
+                var logMock = new Mock<ILogger>();
+                //act
+                IActionResult addCommentResult =
+                    await AddFunction.AddComment(reqMock.Object, documentClientMock.Object, logMock.Object);
+                BadRequestObjectResult badRequestObjectResult = (BadRequestObjectResult) addCommentResult;
+
+                //assert
+                badRequestObjectResult.Should().BeOfType<BadRequestObjectResult>();
+                badRequestObjectResult.Value.Should().BeEquivalentTo(new {reason = "Invalid data"});
+            }
+
             [Fact]
             public async Task ShouldReturnInternalServerErrorWhenjds()
             {
@@ -222,8 +254,7 @@ namespace TestProject1
                     .Setup(client => client.CreateDocumentAsync(
                         It.IsAny<Uri>(), It.IsAny<Comment>(), It.IsAny<RequestOptions>(),
                         It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-                    .Returns(Task.FromResult(new ResourceResponse<Document>((Document)null)));
-
+                    .Throws(new Exception());
 
                 var logMock = new Mock<ILogger>();
                 //act

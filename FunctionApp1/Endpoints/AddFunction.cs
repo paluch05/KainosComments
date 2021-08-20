@@ -51,7 +51,7 @@ namespace FunctionApp1.Endpoints
             {
                 //return new BadRequestObjectResult(validationResult.Errors);
                 log.LogInformation(validationResult.ToString());
-                return new BadRequestObjectResult(new {reason = "Invalid dat"});
+                return new BadRequestObjectResult(new {reason = "Invalid data"});
             }
 
             var comment = new Comment
@@ -60,17 +60,20 @@ namespace FunctionApp1.Endpoints
                     Text = addCommentRequest.Text,
                     CreationDate = DateTime.UtcNow
                 };
-
+                Document createResponse;
                 var commentCollectionUri = UriFactory.CreateDocumentCollectionUri("Comments", "Comment");
-
-                var createResponse = await documentClient.CreateDocumentAsync(commentCollectionUri, comment);
-                if (createResponse.Resource == null)
+                try
                 {
+                    createResponse = await documentClient.CreateDocumentAsync(commentCollectionUri, comment);
+                }
+                catch (Exception e )
+                {
+                    log.LogInformation("Unable to create a document");
                     return new InternalServerErrorResult();
                 }
 
                 log.LogInformation("Comment successfully created.");
-                return new OkObjectResult(new { id = createResponse.Resource.Id });
+                return new OkObjectResult(new { id = createResponse.Id });
         }
     }
 }
