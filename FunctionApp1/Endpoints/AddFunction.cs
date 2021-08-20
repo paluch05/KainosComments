@@ -1,8 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Threading.Tasks;
-using System.Web.Http;
-using FunctionApp1.Model;
+﻿using FunctionApp1.Model;
 using FunctionApp1.Validators;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -12,6 +8,10 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using System.Web.Http;
 
 namespace FunctionApp1.Endpoints
 {
@@ -25,55 +25,55 @@ namespace FunctionApp1.Endpoints
                 databaseName: "Comments",
                 collectionName: "Comment",
                 ConnectionStringSetting = "CosmosDbConnectionString")]
-            IDocumentClient documentClient, // dodaje doc do cosm
+            IDocumentClient documentClient, 
             ILogger log)
         {
             log.LogInformation("Creating a new comment");
 
-            var requestBody = await new StreamReader(req.Body).ReadToEndAsync(); // zamiana body z req na string z json
-            AddCommentRequest addCommentRequest; // dekoracja zmiennej
+            var requestBody = await new StreamReader(req.Body).ReadToEndAsync(); 
+            AddCommentRequest addCommentRequest; 
 
             try
             {
                 addCommentRequest =
                     JsonConvert.DeserializeObject<AddCommentRequest>(
-                        requestBody); // deserializacja str z json na obj kl addcomreq
+                        requestBody); 
             }
             catch (Exception e)
             {
                 return new BadRequestObjectResult(new
-                { reason = "Your JSON format is incorrect" }); // 400, format zly np bez {
+                { reason = "Your JSON format is incorrect" }); 
             }
 
             var addCommentRequestValidator = new AddCommentRequestValidator();
             var validationResult = addCommentRequestValidator.Validate(addCommentRequest);
             if (!validationResult.IsValid)
             {
-                //return new BadRequestObjectResult(validationResult.Errors);
                 log.LogInformation(validationResult.ToString());
-                return new BadRequestObjectResult(new {reason = "Invalid data"});
+                return new BadRequestObjectResult(new { reason = "Invalid data" });
             }
 
             var comment = new Comment
-                {
-                    Author = addCommentRequest.Author,
-                    Text = addCommentRequest.Text,
-                    CreationDate = DateTime.UtcNow
-                };
-                Document createResponse;
-                var commentCollectionUri = UriFactory.CreateDocumentCollectionUri("Comments", "Comment");
-                try
-                {
-                    createResponse = await documentClient.CreateDocumentAsync(commentCollectionUri, comment);
-                }
-                catch (Exception e )
-                {
-                    log.LogInformation("Unable to create a document");
-                    return new InternalServerErrorResult();
-                }
+            {
+                Author = addCommentRequest.Author,
+                Text = addCommentRequest.Text,
+                CreationDate = DateTime.UtcNow
+            };
 
-                log.LogInformation("Comment successfully created.");
-                return new OkObjectResult(new { id = createResponse.Id });
+            Document createResponse;
+            var commentCollectionUri = UriFactory.CreateDocumentCollectionUri("Comments", "Comment");
+            try
+            {
+                createResponse = await documentClient.CreateDocumentAsync(commentCollectionUri, comment);
+            }
+            catch (Exception e)
+            {
+                log.LogInformation("Unable to create a document");
+                return new InternalServerErrorResult();
+            }
+
+            log.LogInformation("Comment successfully created.");
+            return new OkObjectResult(new { id = createResponse.Id });
         }
     }
 }

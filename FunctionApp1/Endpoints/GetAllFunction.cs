@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Web.Http;
-using FunctionApp1.Model;
+﻿using FunctionApp1.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Documents;
@@ -10,6 +7,9 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Web.Http;
 
 namespace FunctionApp1.Endpoints
 {
@@ -35,7 +35,8 @@ namespace FunctionApp1.Endpoints
                 var commentCollectionUri = UriFactory.CreateDocumentCollectionUri("Comments", "Comment");
 
                 var feed = await documentClient.ReadDocumentFeedAsync(commentCollectionUri,
-                    new FeedOptions {RequestContinuation = continuationToken});
+                    new FeedOptions { RequestContinuation = continuationToken });
+
                 if (feed.CurrentResourceQuotaUsage == null)
                 {
                     return new InternalServerErrorResult();
@@ -51,7 +52,8 @@ namespace FunctionApp1.Endpoints
             } while (continuationToken != null);
 
             log.LogInformation("List of all comments: ");
-            return new OkObjectResult(new {result = comments});
+
+            return new OkObjectResult(new { result = comments });
         }
     }
 }

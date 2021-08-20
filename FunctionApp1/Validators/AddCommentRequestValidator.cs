@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Text;
-using FluentValidation;
+﻿using FluentValidation;
 using FunctionApp1.Model;
 
 namespace FunctionApp1.Validators
